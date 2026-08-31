@@ -1,6 +1,9 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const pool = require('./db/pool');
 
 const checkRoute = require('./routes/check');
 const reportsRoute = require('./routes/reports');
@@ -22,6 +25,18 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🛡️  ScamShield backend running on port ${PORT}`);
+async function ensureDatabaseReady() {
+  try {
+    const schema = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
+    await pool.query(schema);
+    console.log('✅ Database tables ready.');
+  } catch (err) {
+    console.error('⚠️  Could not verify/create database tables:', err.message);
+  }
+}
+
+ensureDatabaseReady().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🛡️  ScamShield backend running on port ${PORT}`);
+  });
 });
